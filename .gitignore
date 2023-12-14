@@ -1,0 +1,55 @@
+# Dependency directories
+node_modules/
+
+# Environment variables
+.env
+app.js/
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Testing data
+coverage/
+
+# Compiled binary addons
+build/Release
+
+# Dependency files
+npm-debug.log
+yarn-error.log
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# IDE files
+.idea/
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.idea/
+*.suo
+*.ntvs*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
