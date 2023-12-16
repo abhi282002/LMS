@@ -3,7 +3,7 @@ node_modules/
 
 # Environment variables
 .env
-app.js/
+
 # Logs
 logs/
 *.log

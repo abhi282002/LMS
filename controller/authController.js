@@ -1,45 +1,45 @@
-const User = require("../model/userSchema");
-const emailValidator = require("email-validator");
-const bcrypt = require("bcrypt");
+import User from "../model/userSchema.js";
+import bcrypt from "bcrypt";
+import ApiError from "../utils/error.util.js";
+
+
 const sign_up = async (req, res, next) => {
   const { name, email, password, confirmPassword } = req.body;
   if (!name || !email || !password || !confirmPassword) {
-    return res.status(400).json({
-      success: false,
-      message: "Every Field is required",
-    });
+    return next(new ApiError("All fields are required", 400));
   }
-  const emailValid = emailValidator.validate(email);
-  if (!emailValid) {
-    return res.status(400).json({
-      success: false,
-      message: "Email is Not valid",
-    });
-  }
+
   if (password !== confirmPassword) {
-    return res.status(400).json({
-      success: false,
-      message: "Password and Confirm password does't match",
-    });
+    return next(new ApiError("Password and Confirm Password not correct"));
   }
   try {
-    const userInfo = User(req.body);
-    const result = await userInfo.save();
-
+    const userInfo = await User.create({
+      name,
+      email,
+      password,
+      avatar: {
+        public_id: email,
+        secure_url:
+          "https://cloudinary-marketing-res.cloudinary.com/images/w_1000,c_scale/v1679921049/Image_URL_header/Image_URL_header-png?_i=AA",
+      },
+    });
+    if (!userInfo) {
+      return next(
+        new ApiError("User registration failed, please try again", 500)
+      );
+    }
+    userInfo.password = undefined;
     return res.status(200).json({
       success: true,
-      data: result,
+      data: userInfo,
     });
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Account already exists with provided emailId",
-      });
+      next(new ApiError("Email already exit", 400));
     }
     return res.status(400).json({
       success: false,
-      message: e.message,
+      message: error.message,
     });
   }
 };
@@ -117,9 +117,4 @@ const logout = async (req, res) => {
     });
   }
 };
-module.exports = {
-  sign_up,
-  sign_in,
-  getUser,
-  logout,
-};
+export { sign_up, sign_in, getUser, logout };

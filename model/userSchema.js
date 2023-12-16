@@ -1,6 +1,7 @@
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+
 const userSchema = mongoose.Schema(
   {
     name: {
@@ -16,10 +17,29 @@ const userSchema = mongoose.Schema(
       require: [true, "Email is Required"],
       unique: [true, "Already Registered"],
       lowercase: true,
+      match: [
+        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+        "Please fill in a valid email address",
+      ],
     },
     password: {
       type: String,
+      required: [true, "Password is required"],
+      minlength: [8, "Password must be at least 8 characters"],
       select: false,
+    },
+    avatar: {
+      public_id: {
+        type: String,
+      },
+      secure_url: {
+        type: String,
+      },
+    },
+    role: {
+      type: String,
+      enum: ["USER", "ADMIN"],
+      default: "USER",
     },
     forgotPasswordToken: {
       type: String,
@@ -57,4 +77,4 @@ userSchema.methods = {
 };
 
 const User = mongoose.model("User", userSchema);
-module.exports = User;
+export default User;
