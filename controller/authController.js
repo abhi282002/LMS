@@ -1,7 +1,8 @@
 import User from "../model/userSchema.js";
 import bcrypt from "bcrypt";
 import ApiError from "../utils/error.util.js";
-
+import cloudinary from "cloudinary";
+import fs from "fs/promises";
 const cookieOption = {
   httpOnly: true,
 
@@ -33,10 +34,38 @@ const sign_up = async (req, res, next) => {
         new ApiError("User registration failed, please try again", 500)
       );
     }
+
+    if (req.file) {
+      console.log(req.file);
+      try {
+        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+          folder: "lms",
+          width: 250,
+          height: 250,
+          gravity: "faces",
+          crop: "fill",
+        });
+        if (result) {
+          userInfo.avatar.public_id = result.public_id;
+          userInfo.avatar.secure_url = result.secure_url;
+          //remove file from local system
+          fs.rm(`upload/${req.file.filename}`);
+        }
+      } catch (error) {
+        fs.rm(`upload/${req.file.filename}`);
+        return next(
+          new ApiError(
+            error.message || "file not uploaded please try again",
+            500
+          )
+        );
+      }
+    }
+    await userInfo.save();
     userInfo.password = undefined;
 
     const token = userInfo.jwtToken();
-    console.log(token);
+
     res.cookie("token", token, cookieOption);
     return res.status(200).json({
       success: true,

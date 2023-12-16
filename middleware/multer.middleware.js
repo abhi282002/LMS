@@ -9,7 +9,7 @@ const upload = multer({
       cb(null, file.originalname);
     },
   }),
-  fileFilter: (_req, file, db) => {
+  fileFilter: (_req, file, cb) => {
     let ext = path.extname(file.originalname);
     if (
       ext !== ".jpg" &&
@@ -19,7 +19,9 @@ const upload = multer({
       ext !== ".mp4"
     ) {
       cb(new Error(`Unsupported file type! ${ext}`), false);
+      return;
     }
+    cb(null, true);
   },
 });
 
