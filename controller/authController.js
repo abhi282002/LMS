@@ -2,6 +2,11 @@ import User from "../model/userSchema.js";
 import bcrypt from "bcrypt";
 import ApiError from "../utils/error.util.js";
 
+const cookieOption = {
+  httpOnly: true,
+
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 const sign_up = async (req, res, next) => {
   const { name, email, password, confirmPassword } = req.body;
@@ -29,45 +34,37 @@ const sign_up = async (req, res, next) => {
       );
     }
     userInfo.password = undefined;
+
+    const token = userInfo.jwtToken();
+    console.log(token);
+    res.cookie("token", token, cookieOption);
     return res.status(200).json({
       success: true,
+      message: "User Registered Successfully",
       data: userInfo,
     });
   } catch (error) {
     if (error.code === 11000) {
       next(new ApiError("Email already exit", 400));
     }
-    return res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return next(ApiError(error.message, 500));
   }
 };
 
 const sign_in = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json({
-      success: false,
-      message: "Every Field is required",
-    });
+    return next(new ApiError("All fields are require", 400));
   }
   try {
     const user = await User.findOne({
       email,
     }).select("+password");
     if (!user || !bcrypt.compare(password, user.password)) {
-      return res.status(400).json({
-        success: false,
-        message: "InValid Credential",
-      });
+      return next(new ApiError("Invalid Credential", 400));
     }
     const token = user.jwtToken();
     user.password = undefined;
-    const cookieOption = {
-      maxAge: 24 * 60 * 60 * 1000,
-      httpOnly: true,
-    };
 
     res.cookie("token", token, cookieOption);
     return res.status(200).json({
@@ -75,10 +72,7 @@ const sign_in = async (req, res) => {
       data: user,
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return next(new ApiError(error.message, 500));
   }
 };
 
@@ -89,13 +83,11 @@ const getUser = async (req, res) => {
     console.log(user);
     return res.status(200).json({
       success: true,
+      message: "User Details",
       data: user,
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return next(new ApiError(error.message, 500));
   }
 };
 
@@ -111,10 +103,7 @@ const logout = async (req, res) => {
       message: "Logout Successfully",
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return next(new ApiError("Logout unsuccessful", 500));
   }
 };
 export { sign_up, sign_in, getUser, logout };

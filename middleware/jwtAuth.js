@@ -1,23 +1,18 @@
 import jwt from "jsonwebtoken";
+import ApiError from "../utils/error.util.js";
 
 const jwtAuth = async (req, res, next) => {
   const token = (req.cookies && req.cookies.token) || null;
 
   if (!token) {
-    return res.status(400).json({
-      success: false,
-      message: "Not Authorize",
-    });
+    return next(new ApiError("Not Authorize", 400));
   }
 
   try {
-    const payload = jwt.verify(token, process.env.SECRET);
+    const payload = await jwt.verify(token, process.env.SECRET);
     req.user = { id: payload._id, email: payload.email };
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    return next(new ApiError(error.message, 500));
   }
   next();
 };

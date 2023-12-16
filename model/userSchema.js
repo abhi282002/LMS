@@ -67,6 +67,8 @@ userSchema.methods = {
       {
         _id: this._id,
         email: this.email,
+        subscription: this.subscription,
+        role: this.role,
       },
       process.env.SECRET,
       {
