@@ -76,7 +76,7 @@ const sign_up = async (req, res, next) => {
     if (error.code === 11000) {
       next(new ApiError("Email already exit", 400));
     }
-    return next(ApiError(error.message, 500));
+    return next(new ApiError(error.message, 500));
   }
 };
 
@@ -135,4 +135,36 @@ const logout = async (req, res) => {
     return next(new ApiError("Logout unsuccessful", 500));
   }
 };
-export { sign_up, sign_in, getUser, logout };
+
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return next(new ApiError("Email is required", 400));
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return next(new ApiError("Email not registered", 400));
+  }
+  const resetToken = await user.generatePasswordResetToken();
+  await user.save();
+  const resetPasswordURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+  try {
+    await sendEmail(email, subject, message);
+    res.status(200).json({
+      success: true,
+      message: `Reset password token has been sent to ${email}`,
+    });
+  } catch (error) {
+    user.forgotPasswordToken = undefined;
+    forgotPasswordExpiryDate = undefined;
+
+    await user.save();
+    next(new ApiError(error.message, 500));
+  }
+};
+
+const resetPassword = () => {};
+export { sign_up, sign_in, resetPassword, forgotPassword, getUser, logout };

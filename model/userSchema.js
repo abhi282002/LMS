@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-
+import crypto from "crypto";
 const userSchema = mongoose.Schema(
   {
     name: {
@@ -44,7 +44,7 @@ const userSchema = mongoose.Schema(
     forgotPasswordToken: {
       type: String,
     },
-    forPasswordExpiryDate: {
+    forgotPasswordExpiryDate: {
       type: Date,
     },
   },
@@ -75,6 +75,17 @@ userSchema.methods = {
         expiresIn: "24h",
       }
     );
+  },
+};
+
+userSchema.methods = {
+  async generatePasswordResetToken() {
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    this.forgotPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+    this.forgotPasswordExpiryDate = Date.now() + 15 * 60 * 1000; //15min from now
   },
 };
 
