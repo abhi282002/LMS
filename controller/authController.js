@@ -5,7 +5,6 @@ import cloudinary from "cloudinary";
 import fs from "fs/promises";
 const cookieOption = {
   httpOnly: true,
-
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
