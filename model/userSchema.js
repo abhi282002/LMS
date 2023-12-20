@@ -62,7 +62,7 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods = {
-  jwtToken() {
+  generateJwtToken: async function () {
     return jwt.sign(
       {
         _id: this._id,
@@ -76,10 +76,7 @@ userSchema.methods = {
       }
     );
   },
-};
-
-userSchema.methods = {
-  async generatePasswordResetToken() {
+  generatePasswordResetToken: async function () {
     const resetToken = crypto.randomBytes(20).toString("hex");
     this.forgotPasswordToken = crypto
       .createHash("sha256")

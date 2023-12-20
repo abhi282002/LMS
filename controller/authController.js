@@ -3,12 +3,14 @@ import bcrypt from "bcrypt";
 import ApiError from "../utils/error.util.js";
 import cloudinary from "cloudinary";
 import fs from "fs/promises";
+import sendEmail from "../utils/sendEmail.js";
+import asyncHandler from "../middleware/asyncHandler.middleware.js";
 const cookieOption = {
   httpOnly: true,
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-const sign_up = async (req, res, next) => {
+const sign_up = asyncHandler(async (req, res, next) => {
   const { name, email, password, confirmPassword } = req.body;
   if (!name || !email || !password || !confirmPassword) {
     return next(new ApiError("All fields are required", 400));
@@ -61,10 +63,10 @@ const sign_up = async (req, res, next) => {
       }
     }
     await userInfo.save();
+    const token = await userInfo.generateJwtToken();
     userInfo.password = undefined;
 
-    const token = userInfo.jwtToken();
-
+    console.log("token");
     res.cookie("token", token, cookieOption);
     return res.status(200).json({
       success: true,
@@ -77,9 +79,9 @@ const sign_up = async (req, res, next) => {
     }
     return next(new ApiError(error.message, 500));
   }
-};
+});
 
-const sign_in = async (req, res) => {
+const sign_in = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return next(new ApiError("All fields are require", 400));
@@ -102,7 +104,7 @@ const sign_in = async (req, res) => {
   } catch (error) {
     return next(new ApiError(error.message, 500));
   }
-};
+});
 
 const getUser = async (req, res) => {
   const userId = req.user.id;
@@ -135,7 +137,7 @@ const logout = async (req, res) => {
   }
 };
 
-const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res, next) => {
   const { email } = req.body;
   if (!email) {
     return next(new ApiError("Email is required", 400));
@@ -147,8 +149,10 @@ const forgotPassword = async (req, res) => {
     return next(new ApiError("Email not registered", 400));
   }
   const resetToken = await user.generatePasswordResetToken();
-  await user.save();
+  await user.save(); //to save forgotpasswordtoken and expiry in database
   const resetPasswordURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+  const subject = "Reset Password";
+  const message = `You can reset your password by clicking <a href=${resetPasswordUrl} target="_blank">Reset your password</a>\nIf the above link does not work for some reason then copy paste this link in new tab ${resetPasswordURL}.\n If you have not requested this, kindly ignore.`;
 
   try {
     await sendEmail(email, subject, message);
@@ -158,10 +162,12 @@ const forgotPassword = async (req, res) => {
     });
   } catch (error) {
     user.forgotPasswordToken = undefined;
-    forgotPasswordExpiryDate = undefined;
+    user.forgotPasswordExpiryDate = undefined;
 
     await user.save();
-    next(new ApiError(error.message, 500));
+    return next(
+      new ApiError(error.message || "Error While Processing Email ", 500)
+    );
   }
 };
 

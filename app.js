@@ -19,7 +19,7 @@ app.use(
   })
 );
 
-app.use("/api/v1/", authRoute);
+app.use("/api/v1/user", authRoute);
 
 app.use("/", (req, res) => {
   res.status(200).json({ name: "abhishek" });
