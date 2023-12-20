@@ -205,4 +205,83 @@ const resetPassword = asyncHandler(async (req, res, next) => {
     message: "Password Changed Successfully",
   });
 });
-export { sign_up, sign_in, resetPassword, forgotPassword, getUser, logout };
+
+const changePassword = asyncHandler(async (req, res, next) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) {
+    return next(
+      new ApiError("Old password and new password are required", 400)
+    );
+  }
+  const { id } = req.user;
+  const user = await User.findById(id).select("+password");
+  console.log(user);
+  if (!user) {
+    return next(new ApiError("Invalid User or User does not exist", 400));
+  }
+  const isValidPassword = await bcrypt.compare(oldPassword, user.password);
+  if (!isValidPassword) {
+    return next(new ApiError("Password does not match", 400));
+  }
+  user.password = newPassword;
+  await user.save();
+  user.password = undefined;
+  res.status(200).json({
+    success: true,
+    message: "Password Changed Successfully",
+    user,
+  });
+});
+
+const updateProfile = asyncHandler(async (req, res, next) => {
+  const { name } = req.body;
+  const { id } = req.user;
+  const userInfo = await User.findById(id);
+  if (!userInfo) {
+    return next(new ApiError("Invalid User or User does not exist", 400));
+  }
+  if (name) {
+    userInfo.name = name;
+  }
+
+  if (req.file) {
+    console.log(req.file);
+    await cloudinary.v2.uploader.destroy(userInfo.avatar.public_id);
+    try {
+      const result = await cloudinary.v2.uploader.upload(req.file.path, {
+        folder: "lms",
+        width: 250,
+        height: 250,
+        gravity: "faces",
+        crop: "fill",
+      });
+      if (result) {
+        userInfo.avatar.public_id = result.public_id;
+        userInfo.avatar.secure_url = result.secure_url;
+        //remove file from local system
+        fs.rm(`upload/${req.file.filename}`);
+      }
+    } catch (error) {
+      fs.rm(`upload/${req.file.filename}`);
+      return next(
+        new ApiError(error.message || "file not uploaded please try again", 500)
+      );
+    }
+  }
+
+  await userInfo.save();
+  res
+    .status(200)
+    .json({ success: true, message: "Profile Updated Successfully", userInfo });
+});
+
+export {
+  sign_up,
+  changePassword,
+  updateProfile,
+  sign_in,
+  resetPassword,
+  forgotPassword,
+  getUser,
+  logout,
+};
