@@ -13,7 +13,7 @@ const authRouter = express.Router();
 
 authRouter.post("/sign_up", upload.single("avatar"), sign_up);
 authRouter.post("/sign_in", sign_in);
-authRouter.get("/user", jwtAuth, getUser);
+authRouter.get("/me", jwtAuth, getUser);
 authRouter.get("/logout", jwtAuth, logout);
 authRouter.post("/reset", forgotPassword);
 authRouter.post("/reset/:resetToken", resetPassword);

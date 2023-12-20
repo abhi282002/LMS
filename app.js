@@ -19,6 +19,8 @@ app.use(
   })
 );
 
+app.use(express.urlencoded({ extended: true }));
+
 app.use("/api/v1/user", authRoute);
 
 app.use("/", (req, res) => {

@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import ApiError from "../utils/error.util.js";
 import cloudinary from "cloudinary";
 import fs from "fs/promises";
+import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 import asyncHandler from "../middleware/asyncHandler.middleware.js";
 const cookieOption = {
@@ -81,7 +82,7 @@ const sign_up = asyncHandler(async (req, res, next) => {
   }
 });
 
-const sign_in = asyncHandler(async (req, res) => {
+const sign_in = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return next(new ApiError("All fields are require", 400));
@@ -90,15 +91,16 @@ const sign_in = asyncHandler(async (req, res) => {
     const user = await User.findOne({
       email,
     }).select("+password");
-    if (!user || !bcrypt.compare(password, user.password)) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return next(new ApiError("Invalid Credential", 400));
     }
-    const token = user.jwtToken();
+    const token = await user.generateJwtToken();
     user.password = undefined;
 
     res.cookie("token", token, cookieOption);
     return res.status(200).json({
       success: true,
+      message: "Login Successful",
       data: user,
     });
   } catch (error) {
@@ -106,7 +108,7 @@ const sign_in = asyncHandler(async (req, res) => {
   }
 });
 
-const getUser = async (req, res) => {
+const getUser = asyncHandler(async (req, res, next) => {
   const userId = req.user.id;
   try {
     const user = await User.findById(userId);
@@ -119,9 +121,9 @@ const getUser = async (req, res) => {
   } catch (error) {
     return next(new ApiError(error.message, 500));
   }
-};
+});
 
-const logout = async (req, res) => {
+const logout = asyncHandler(async (req, res, next) => {
   try {
     const cookieOption = {
       maxAge: new Date(),
@@ -135,9 +137,9 @@ const logout = async (req, res) => {
   } catch (error) {
     return next(new ApiError("Logout unsuccessful", 500));
   }
-};
+});
 
-const forgotPassword = async (req, res, next) => {
+const forgotPassword = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
   if (!email) {
     return next(new ApiError("Email is required", 400));
@@ -152,7 +154,10 @@ const forgotPassword = async (req, res, next) => {
   await user.save(); //to save forgotpasswordtoken and expiry in database
   const resetPasswordURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
   const subject = "Reset Password";
-  const message = `You can reset your password by clicking <a href=${resetPasswordUrl} target="_blank">Reset your password</a>\nIf the above link does not work for some reason then copy paste this link in new tab ${resetPasswordURL}.\n If you have not requested this, kindly ignore.`;
+
+  const message = `<p>You can reset your password by clicking <a href="${resetPasswordURL}" target="_blank">Reset your password</a>.</p>
+<p>If the above link does not work for some reason, then copy-paste this link in a new tab: <a href="${resetPasswordURL}" target="_blank">${resetPasswordURL}</a>.</p>
+<p>If you have not requested this, kindly ignore.</p>`;
 
   try {
     await sendEmail(email, subject, message);
@@ -169,7 +174,35 @@ const forgotPassword = async (req, res, next) => {
       new ApiError(error.message || "Error While Processing Email ", 500)
     );
   }
-};
+});
 
-const resetPassword = () => {};
+const resetPassword = asyncHandler(async (req, res, next) => {
+  const { resetToken } = req.params;
+
+  const { password } = req.body;
+  const forgotPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+  const user = await User.findOne({
+    forgotPasswordToken,
+    forgotPasswordExpiryDate: { $gt: Date.now() },
+  });
+  if (!user) {
+    return next(
+      new ApiError("token is invalid or expired please tried again", 400)
+    );
+  }
+
+  user.password = password;
+
+  user.forgotPasswordToken = undefined;
+  user.forgotPasswordExpiryDate = undefined;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Password Changed Successfully",
+  });
+});
 export { sign_up, sign_in, resetPassword, forgotPassword, getUser, logout };
