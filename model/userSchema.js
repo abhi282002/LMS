@@ -86,6 +86,7 @@ userSchema.methods = {
       .update(resetToken)
       .digest("hex");
     this.forgotPasswordExpiryDate = Date.now() + 15 * 60 * 1000; //15min from now
+    return resetToken;
   },
 };
 
