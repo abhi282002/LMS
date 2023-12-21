@@ -12,7 +12,7 @@ const cookieOption = {
 };
 
 const sign_up = asyncHandler(async (req, res, next) => {
-  const { name, email, password, confirmPassword } = req.body;
+  const { name, email, password, confirmPassword, role } = req.body;
   if (!name || !email || !password || !confirmPassword) {
     return next(new ApiError("All fields are required", 400));
   }
@@ -30,6 +30,7 @@ const sign_up = asyncHandler(async (req, res, next) => {
         secure_url:
           "https://cloudinary-marketing-res.cloudinary.com/images/w_1000,c_scale/v1679921049/Image_URL_header/Image_URL_header-png?_i=AA",
       },
+      role,
     });
     if (!userInfo) {
       return next(
@@ -91,6 +92,7 @@ const sign_in = asyncHandler(async (req, res, next) => {
     const user = await User.findOne({
       email,
     }).select("+password");
+    console.log(user);
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return next(new ApiError("Invalid Credential", 400));
     }
@@ -129,7 +131,8 @@ const logout = asyncHandler(async (req, res, next) => {
       maxAge: new Date(),
       httpOnly: true,
     };
-    res.cookie("token", null, cookieOption);
+    res.clearCookie("token", cookieOption);
+    // res.cookie("token", null, cookieOption);
     return res.status(200).json({
       success: true,
       message: "Logout Successfully",

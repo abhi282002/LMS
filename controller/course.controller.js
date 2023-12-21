@@ -116,7 +116,6 @@ const removeCourse = asyncHandler(async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Course Deleted Successfully",
-      course,
     });
   } catch (error) {
     next(new ApiError(error.message, 500));
