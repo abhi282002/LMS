@@ -1,4 +1,4 @@
-import mongoose, { model, Schema } from "mongoose";
+import { model, Schema } from "mongoose";
 
 const courseSchema = new Schema(
   {
@@ -23,11 +23,9 @@ const courseSchema = new Schema(
     thumbnail: {
       public_id: {
         type: String,
-        required: true,
       },
       secure_url: {
         type: String,
-        required: true,
       },
     },
     lectures: [
