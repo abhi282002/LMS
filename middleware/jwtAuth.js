@@ -21,7 +21,7 @@ export const authorizedRoles =
   (...roles) =>
   async (req, res, next) => {
     const currentUserRole = req.user.role;
-    console.log(currentUserRole);
+
     if (!roles.includes(currentUserRole)) {
       return next(
         new ApiError("You do not have permission to view this route", 403)

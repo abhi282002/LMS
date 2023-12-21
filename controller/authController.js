@@ -68,7 +68,6 @@ const sign_up = asyncHandler(async (req, res, next) => {
     const token = await userInfo.generateJwtToken();
     userInfo.password = undefined;
 
-    console.log("token");
     res.cookie("token", token, cookieOption);
     return res.status(200).json({
       success: true,
