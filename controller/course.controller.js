@@ -80,9 +80,48 @@ const createCourse = asyncHandler(async (req, res, next) => {
   });
 });
 
-const updateCourse = asyncHandler(async (req, res) => {});
+const updateCourse = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  console.log(id);
+  try {
+    const course = await Course.findByIdAndUpdate(
+      id,
+      {
+        $set: req.body,
+      },
+      {
+        runValidators: true,
+        new: true,
+      }
+    );
+    if (!course) {
+      return next(new ApiError("Course with given id does not exist", 400));
+    }
+    res.status(200).json({
+      success: true,
+      message: "Course updated successfully",
+    });
+  } catch (error) {
+    return next(new ApiError(error.message, 500));
+  }
+});
 
-const removeCourse = asyncHandler(async (req, res) => {});
+const removeCourse = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const course = await Course.findByIdAndDelete(id);
+    if (!course) {
+      return next(new ApiError("Course Does't exits", 400));
+    }
+    res.status(200).json({
+      success: true,
+      message: "Course Deleted Successfully",
+      course,
+    });
+  } catch (error) {
+    next(new ApiError(error.message, 500));
+  }
+});
 export {
   removeCourse,
   createCourse,

@@ -17,7 +17,7 @@ router
 router
   .route("/:id")
   .get(jwtAuth, getLectureByCourseId)
-  .put(updateCourse)
+  .put(jwtAuth, updateCourse)
   .delete(removeCourse);
 
 export default router;
