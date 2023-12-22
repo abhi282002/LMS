@@ -161,6 +161,43 @@ const createAllLecturesById = asyncHandler(async (req, res, next) => {
     });
   }
 });
+
+const removeLectureById = asyncHandler(async (req, res, next) => {
+  const { lectureId, courseId } = req.query;
+  if (!lectureId || !courseId) {
+    next(new ApiError("CourseId or Lecture Id does't present"));
+  }
+
+  try {
+    const course = await Course.findById(courseId);
+    if (!course) {
+      next(new ApiError("Course does't exit"), 400);
+    }
+    const lectureIndex = course.lectures.findIndex(
+      (lecture) => lecture._id.toString() === lectureId.toString()
+    );
+    if (lectureId === -1) {
+      next(new ApiError("lecture not present", 400));
+    }
+    await cloudinary.v2.uploader.destroy(
+      course.lectures[lectureIndex].lecture.public_id,
+      {
+        resource_type: "video",
+      }
+    );
+    course.lectures.splice(lectureIndex, 1);
+    course.numbersOfLectures = course.lectures.length;
+    console.log(course.numbersOfLectures);
+    await course.save();
+    res.status(200).json({
+      success: true,
+      message: "Course lecture removed successfully",
+    });
+  } catch (error) {
+    next(new ApiError(error.message, 500));
+  }
+});
+
 export {
   removeCourse,
   createCourse,
@@ -168,4 +205,5 @@ export {
   getAllCourses,
   getLectureByCourseId,
   createAllLecturesById,
+  removeLectureById,
 };

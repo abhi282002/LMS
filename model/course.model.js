@@ -30,6 +30,7 @@ const courseSchema = new Schema(
     },
     lectures: [
       {
+        _id: { type: Schema.Types.ObjectId, auto: true },
         title: String,
         description: String,
         lecture: {
